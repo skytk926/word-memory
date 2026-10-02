@@ -478,6 +478,13 @@ function playOnce(url) {
   });
 }
 
+function delay(ms) {
+  return new Promise(resolve => {
+    autoResolve = resolve;
+    setTimeout(() => { if (autoResolve === resolve) autoResolve = null; resolve(); }, ms);
+  });
+}
+
 async function runAutoPlay() {
   const token = ++autoToken;
   const sec = sections.find(s => s.id === activeId);
@@ -502,6 +509,7 @@ async function runAutoPlay() {
       for (let r = 0; r < repeat && token === autoToken; r++) await playOnce(w.ea);
     }
     doneCount++;
+    if (i < to) await delay(1000);
   }
   autoToken++;
   setRunning(false);
