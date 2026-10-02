@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>N2 词汇 · 互联背词</title>
+<style>
+  :root {
+    --bg: #070b14;
+    --bg-2: #0d1424;
+    --panel: rgba(255, 255, 255, 0.035);
+    --panel-solid: #101a30;
+    --border: rgba(255, 255, 255, 0.09);
+    --text: #eef2fb;
+    --dim: #93a0bb;
+    --faint: #5c6a86;
+    --accent: #38bdf8;
+    --accent-2: #a78bfa;
+    --accent-3: #22d3ee;
+    --glow: rgba(56, 189, 248, 0.5);
+    --radius: 16px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(1200px 700px at 85% -10%, rgba(167, 139, 250, 0.14), transparent 60%),
+      radial-gradient(1000px 600px at -10% 20%, rgba(56, 189, 248, 0.12), transparent 55%),
+      var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+      "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans JP", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* ---------- animated network background ---------- */
+  #net {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    opacity: 0.5;
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 1180px; margin: 0 auto; padding: 28px 20px 90px; }
+
+  /* ---------- header ---------- */
+  header {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    flex-wrap: wrap; gap: 16px; padding: 6px 4px 24px;
+  }
+  .brand h1 {
+    font-size: 30px; font-weight: 800; letter-spacing: 0.5px; line-height: 1.1;
+    background: linear-gradient(120deg, #7dd3fc 0%, #a78bfa 55%, #22d3ee 100%);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .brand .sub { margin-top: 7px; color: var(--dim); font-size: 13.5px; }
+  .brand .sub b { color: var(--accent); font-weight: 600; }
+  .stat {
+    display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end;
+  }
+  .stat .pill {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 999px;
+    padding: 9px 15px; font-size: 13px; color: var(--dim);
+  }
+  .stat .pill b { color: var(--text); font-weight: 700; font-size: 15px; margin-right: 4px; }
+
+  /* ---------- search ---------- */
+  .searchbar {
+    position: sticky; top: 12px; z-index: 30; margin: 0 0 20px;
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(13, 20, 36, 0.85); backdrop-filter: blur(14px);
+    border: 1px solid var(--border); border-radius: 14px; padding: 10px 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+  }
+  .searchbar svg { flex: none; opacity: 0.6; }
+  .searchbar input {
+    flex: 1; background: transparent; border: none; outline: none; color: var(--text);
+    font-size: 15px; min-width: 0;
+  }
+  .searchbar input::placeholder { color: var(--faint); }
+  .searchbar .clear {
+    flex: none; border: none; background: var(--panel); color: var(--dim);
+    width: 26px; height: 26px; border-radius: 8px; cursor: pointer; font-size: 14px;
+    display: none; align-items: center; justify-content: center;
+  }
+
+  /* ---------- category network nav ---------- */
+  .cats {
+    display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 26px;
+    align-items: center;
+  }
+  .cat {
+    --c: #38bdf8;
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 999px; padding: 9px 15px; cursor: pointer;
+    font-size: 14px; color: var(--dim); transition: all .18s ease;
+    position: relative; user-select: none;
+  }
+  .cat .dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--c); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 22%, transparent);
+    flex: none;
+  }
+  .cat .n { font-size: 11.5px; color: var(--faint); }
+  .cat:hover { color: var(--text); border-color: color-mix(in srgb, var(--c) 55%, transparent); transform: translateY(-1px); }
+  .cat.active {
+    color: #fff; background: color-mix(in srgb, var(--c) 20%, transparent);
+    border-color: var(--c); box-shadow: 0 0 24px color-mix(in srgb, var(--c) 35%, transparent);
+  }
+  .cat.active .n { color: color-mix(in srgb, var(--c) 80%, #fff); }
+  .cat-group {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .cat-group + .cat-group { padding-left: 14px; border-left: 1px solid var(--border); }
+  .group-label {
+    font-size: 11px; letter-spacing: 1.5px; color: var(--faint); text-transform: uppercase;
+    writing-mode: vertical-rl; max-height: 120px;
+  }
+
+  /* ---------- autoplay panel ---------- */
+  .autoplay {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    background: rgba(13, 20, 36, 0.85); backdrop-filter: blur(14px);
+    border: 1px solid var(--border); border-radius: 14px; padding: 12px 16px;
+    margin: 0 0 16px;
+  }
+  .autoplay .lbl { font-size: 12.5px; color: var(--faint); white-space: nowrap; }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
+  .seg button {
+    border: none; background: transparent; color: var(--dim); font-size: 13px;
+    padding: 7px 14px; cursor: pointer; transition: all .15s ease;
+  }
+  .seg button.on { background: color-mix(in srgb, var(--accent) 22%, transparent); color: #fff; }
+  .autoplay input[type="number"] {
+    width: 64px; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); padding: 6px 8px; font-size: 13.5px; text-align: center;
+  }
+  .autoplay input[type="number"]::-webkit-inner-spin-button { opacity: 0.5; }
+  .autoplay .range-sep { color: var(--faint); }
+  .btn {
+    border: 1px solid var(--border); border-radius: 9px; cursor: pointer;
+    padding: 8px 16px; font-size: 13.5px; font-weight: 600; transition: all .15s ease;
+    color: var(--text); background: var(--panel); white-space: nowrap;
+  }
+  .btn.primary {
+    background: linear-gradient(120deg, #38bdf8, #a78bfa); border: none; color: #08101f;
+  }
+  .btn.primary:hover { filter: brightness(1.1); }
+  .btn.stop { color: #fda4af; border-color: rgba(251,113,133,0.4); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .autoplay .prog { font-size: 12.5px; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .autoplay .hint { font-size: 11.5px; color: var(--faint); }
+
+  /* number badge + playing highlight */
+  .card .num {
+    flex: none; font-size: 11px; color: var(--faint); font-weight: 600;
+    letter-spacing: .5px; padding-top: 4px; min-width: 20px; font-variant-numeric: tabular-nums;
+  }
+  .card.playing { border-color: var(--c, var(--accent)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--c, var(--accent)) 45%, transparent), 0 14px 34px rgba(0,0,0,0.35); }
+
+  /* ---------- word grid ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+  .card {
+    background: var(--panel-solid); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px 17px 15px; position: relative; overflow: hidden;
+    transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+  }
+  .card::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+    background: linear-gradient(var(--c, var(--accent)), transparent 75%); opacity: 0.85;
+  }
+  .card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--c, var(--accent)) 45%, transparent); box-shadow: 0 14px 34px rgba(0,0,0,0.35); }
+
+  .card .top { display: flex; align-items: flex-start; gap: 10px; }
+  .word {
+    flex: 1; font-size: 21px; font-weight: 700; line-height: 1.25; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 9px; word-break: break-word;
+  }
+  .word .jp { transition: color .15s ease; }
+  .word:hover .jp { color: var(--c, var(--accent)); }
+  .reading { color: var(--dim); font-size: 13px; margin-top: 2px; font-weight: 500; }
+  .badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .badge {
+    font-size: 11px; padding: 2px 8px; border-radius: 6px;
+    background: rgba(255,255,255,0.06); color: var(--dim); border: 1px solid var(--border);
+  }
+  .badge.acc { color: var(--accent-2); border-color: color-mix(in srgb, var(--accent-2) 30%, transparent); }
+  .badge.pos { color: var(--accent-3); }
+  .meaning { margin-top: 9px; font-size: 14.5px; color: var(--text); line-height: 1.55; }
+
+  .example {
+    margin-top: 11px; padding: 10px 12px; border-radius: 11px; cursor: pointer;
+    background: rgba(255,255,255,0.028); border: 1px dashed var(--border);
+    transition: background .15s ease, border-color .15s ease;
+  }
+  .example:hover { background: rgba(255,255,255,0.05); border-color: color-mix(in srgb, var(--c, var(--accent)) 40%, transparent); }
+  .example .jp { font-size: 14px; line-height: 1.6; color: #d7e0f0; }
+  .example .cn { margin-top: 6px; font-size: 12.5px; color: var(--faint); line-height: 1.5; }
+
+  /* speaker button */
+  .spk {
+    flex: none; width: 30px; height: 30px; border-radius: 9px; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: color-mix(in srgb, var(--c, var(--accent)) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--c, var(--accent)) 30%, transparent);
+    color: var(--c, var(--accent)); transition: all .15s ease;
+  }
+  .spk:hover { background: color-mix(in srgb, var(--c, var(--accent)) 26%, transparent); }
+  .spk.playing { animation: pulse .8s ease infinite; }
+  .spk svg { width: 15px; height: 15px; }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c, var(--accent)) 50%, transparent); } 50% { box-shadow: 0 0 0 8px transparent; } }
+
+  .ex-label { display: flex; align-items: center; gap: 7px; margin-bottom: 4px; }
+  .ex-label .tag { font-size: 10.5px; letter-spacing: 1px; color: var(--faint); }
+
+  .empty { text-align: center; color: var(--faint); padding: 60px 20px; font-size: 15px; }
+
+  footer { margin-top: 50px; text-align: center; color: var(--faint); font-size: 12px; line-height: 1.7; }
+  footer a { color: var(--accent); text-decoration: none; }
+
+  @media (max-width: 640px) {
+    .brand h1 { font-size: 24px; }
+    .grid { grid-template-columns: 1fr; }
+    .cat-group + .cat-group { padding-left: 0; border-left: none; }
+    .group-label { writing-mode: horizontal-tb; max-height: none; }
+  }
+</style>
+</head>
+<body>
+<canvas id="net"></canvas>
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>N2 词汇 · 互联背词</h1>
+      <div class="sub">点击 <b>单词</b> 或 <b>例句</b> 即可发音 · 共 <b id="totalWords">0</b> 词</div>
+    </div>
+    <div class="stat">
+      <div class="pill"><b id="statCat">6</b> 个分类</div>
+      <div class="pill"><b id="statCur">0</b> 当前分类</div>
+    </div>
+  </header>
+
+  <div class="searchbar">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+    <input id="search" type="text" placeholder="搜索单词 / 假名 / 释义…（回车可清空）" autocomplete="off">
+    <button class="clear" id="clearBtn" title="清空">✕</button>
+  </div>
+
+  <div class="autoplay">
+    <span class="lbl">自动播放</span>
+    <div class="seg" id="modeSeg">
+      <button data-mode="all" class="on">全部</button>
+      <button data-mode="range">范围</button>
+    </div>
+    <span class="lbl" id="rangeLbl" style="display:none">编号</span>
+    <input type="number" id="rangeFrom" min="1" value="1" style="display:none">
+    <span class="range-sep" id="rangeSep" style="display:none">–</span>
+    <input type="number" id="rangeTo" min="1" value="1" style="display:none">
+    <span class="lbl">重复</span>
+    <input type="number" id="repeat" min="1" max="10" value="1">
+    <span class="lbl">次</span>
+    <button class="btn primary" id="autoStart">▶ 开始</button>
+    <button class="btn stop" id="autoStop" disabled>■ 停止</button>
+    <span class="prog" id="autoProg"></span>
+    <span class="hint" id="autoHint"></span>
+  </div>
+
+  <nav class="cats" id="cats"></nav>
+
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty" style="display:none">没有匹配的单词</div>
+
+  <footer>
+    数据来源：N2 词汇王炸套餐背词版（OCR 提取，部分内容可能有识别误差）<br>
+    发音由 macOS 语音合成（Kyoko 日语声）离线生成 · 音频存放于 <code>audio/</code> 目录
+  </footer>
+</div>
+
+<script src="data.js"></script>
+<script>
+/* ============ data ============ */
+const CAT_COLORS = {
+  basic: '#38bdf8',
+  kanji: '#a78bfa',
+  verb:  '#f472b6',
+  adj:   '#34d399',
+  loan:  '#fbbf24',
+  adv:   '#22d3ee',
+};
+
+const sections = SECTIONS.map((s, i) => ({
+  ...s,
+  id: s.id,
+  color: CAT_COLORS[s.id] || '#38bdf8',
+  label: s.parent === '核心词汇' ? '核心 · ' + s.title : s.title,
+}));
+
+/* ============ state ============ */
+let activeId = sections[0].id;
+let query = '';
+
+/* ============ audio ============ */
+let current = null;
+function playAudio(url, btn) {
+  if (!url) return;
+  stopAuto();
+  if (current) { current.pause(); current = null; }
+  const a = new Audio(url);
+  current = a;
+  document.querySelectorAll('.spk.playing').forEach(el => el.classList.remove('playing'));
+  if (btn) btn.classList.add('playing');
+  a.onended = () => { if (btn) btn.classList.remove('playing'); };
+  a.onerror = () => { if (btn) btn.classList.remove('playing'); };
+  a.play().catch(() => { if (btn) btn.classList.remove('playing'); });
+}
+
+/* ============ render ============ */
+const grid = document.getElementById('grid');
+const empty = document.getElementById('empty');
+const totalWords = document.getElementById('totalWords');
+const statCur = document.getElementById('statCur');
+const statCat = document.getElementById('statCat');
+
+function esc(s) {
+  return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function wordCard(w, sec, idx) {
+  const badges = [];
+  if (w.a) badges.push(`<span class="badge acc">声调 ${esc(w.a)}</span>`);
+  if (w.p) badges.push(`<span class="badge pos">${esc(w.p)}</span>`);
+
+  const exHtml = w.e
+    ? `<div class="example" onclick="playAudio('${esc(w.ea)}', this.querySelector('.spk'))">
+         <div class="ex-label"><span class="tag">例句</span><span class="spk"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3z"/><path d="M16 8a5 5 0 010 8M18.5 5.5a9 9 0 010 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span></div>
+         <div class="jp">${esc(w.e)}</div>
+         ${w.ec ? `<div class="cn">${esc(w.ec)}</div>` : ''}
+       </div>`
+    : '';
+
+  return `<div class="card" data-idx="${idx}" style="--c:${sec.color}">
+    <div class="top">
+      <span class="num">${idx + 1}</span>
+      <div class="word" onclick="playAudio('${esc(w.wa)}', this.querySelector('.spk'))">
+        <span class="jp">${esc(w.w)}</span>
+        <span class="spk"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3z"/><path d="M16 8a5 5 0 010 8M18.5 5.5a9 9 0 010 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+      </div>
+    </div>
+    ${w.r ? `<div class="reading">${esc(w.r)}</div>` : ''}
+    ${badges.length ? `<div class="badges">${badges.join('')}</div>` : ''}
+    ${w.m ? `<div class="meaning">${esc(w.m)}</div>` : ''}
+    ${exHtml}
+  </div>`;
+}
+
+function matches(w, q) {
+  if (!q) return true;
+  const hay = (w.w + ' ' + w.r + ' ' + w.m + ' ' + w.e + ' ' + w.ec).toLowerCase();
+  return hay.includes(q.toLowerCase());
+}
+
+function render() {
+  const sec = sections.find(s => s.id === activeId);
+  const words = sec.words.filter(w => matches(w, query));
+  grid.innerHTML = words.map((w, i) => wordCard(w, sec, i)).join('');
+  empty.style.display = words.length ? 'none' : 'block';
+  statCur.textContent = words.length;
+  document.getElementById('search').placeholder = `在「${sec.label}」中搜索（${sec.words.length} 词）…`;
+}
+
+/* ============ nav ============ */
+const catsEl = document.getElementById('cats');
+function renderNav() {
+  const groups = {};
+  sections.forEach(s => { (groups[s.parent] = groups[s.parent] || []).push(s); });
+  let html = '';
+  for (const [parent, secs] of Object.entries(groups)) {
+    const chips = secs.map(s =>
+      `<div class="cat ${s.id === activeId ? 'active' : ''}" data-id="${s.id}" style="--c:${s.color}">
+        <span class="dot"></span>${esc(s.label)}<span class="n">${s.words.length}</span>
+      </div>`).join('');
+    html += `<div class="cat-group"><span class="group-label">${esc(parent)}</span>${chips}</div>`;
+  }
+  catsEl.innerHTML = html;
+  catsEl.querySelectorAll('.cat').forEach(el => {
+    el.addEventListener('click', () => {
+      stopAuto();
+      activeId = el.dataset.id;
+      renderNav(); render();
+      updateAutoHint();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  });
+}
+
+/* ============ search ============ */
+const searchInput = document.getElementById('search');
+const clearBtn = document.getElementById('clearBtn');
+searchInput.addEventListener('input', () => {
+  stopAuto();
+  query = searchInput.value.trim();
+  clearBtn.style.display = query ? 'flex' : 'none';
+  render();
+});
+clearBtn.addEventListener('click', () => { searchInput.value = ''; query = ''; clearBtn.style.display = 'none'; render(); });
+searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') { searchInput.value = ''; query = ''; clearBtn.style.display = 'none'; render(); } });
+
+/* ============ autoplay ============ */
+const modeSeg = document.getElementById('modeSeg');
+const rangeLbl = document.getElementById('rangeLbl');
+const rangeFrom = document.getElementById('rangeFrom');
+const rangeTo = document.getElementById('rangeTo');
+const rangeSep = document.getElementById('rangeSep');
+const repeatInput = document.getElementById('repeat');
+const autoStart = document.getElementById('autoStart');
+const autoStop = document.getElementById('autoStop');
+const autoProg = document.getElementById('autoProg');
+const autoHint = document.getElementById('autoHint');
+
+let autoMode = 'all';
+let autoRunning = false;
+let autoToken = 0;
+let autoAudio = null;
+let autoResolve = null;
+
+function updateAutoHint() {
+  const sec = sections.find(s => s.id === activeId);
+  const n = sec.words.length;
+  autoHint.textContent = `本类共 ${n} 词（编号 1–${n}）`;
+  rangeTo.max = n; rangeFrom.max = n;
+  rangeTo.value = String(Math.min(parseInt(rangeTo.value, 10) || n, n));
+  rangeTo.min = 1; rangeFrom.min = 1;
+}
+
+function setRunning(on) {
+  autoRunning = on;
+  autoStart.disabled = on;
+  autoStop.disabled = !on;
+  modeSeg.querySelectorAll('button').forEach(b => b.disabled = on);
+  rangeFrom.disabled = rangeTo.disabled = repeatInput.disabled = on;
+}
+
+function highlightCard(idx) {
+  grid.querySelectorAll('.card.playing').forEach(el => el.classList.remove('playing'));
+  const el = grid.querySelector(`.card[data-idx="${idx}"]`);
+  if (el) { el.classList.add('playing'); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+}
+
+function clearHighlight() {
+  grid.querySelectorAll('.card.playing').forEach(el => el.classList.remove('playing'));
+}
+
+function stopAuto() {
+  autoToken++;
+  if (autoAudio) { autoAudio.pause(); autoAudio = null; }
+  if (autoResolve) { const r = autoResolve; autoResolve = null; r(); }
+  setRunning(false);
+  clearHighlight();
+  autoProg.textContent = '';
+}
+
+function playOnce(url) {
+  return new Promise(resolve => {
+    const a = new Audio(url);
+    autoAudio = a;
+    autoResolve = resolve;
+    const done = () => {
+      if (autoResolve === resolve) autoResolve = null;
+      if (autoAudio === a) autoAudio = null;
+      resolve();
+    };
+    a.onended = done;
+    a.onerror = done;
+    a.play().catch(done);
+  });
+}
+
+async function runAutoPlay() {
+  const token = ++autoToken;
+  const sec = sections.find(s => s.id === activeId);
+  const n = sec.words.length;
+  let from = 0, to = n - 1;
+  if (autoMode === 'range') {
+    from = Math.max(0, (parseInt(rangeFrom.value, 10) || 1) - 1);
+    to = Math.min(n - 1, (parseInt(rangeTo.value, 10) || n) - 1);
+    if (from > to) { const t = from; from = to; to = t; }
+  }
+  const repeat = Math.max(1, Math.min(10, parseInt(repeatInput.value, 10) || 1));
+  setRunning(true);
+  const total = to - from + 1;
+  let doneCount = 0;
+  for (let i = from; i <= to; i++) {
+    if (token !== autoToken) return;
+    const w = sec.words[i];
+    highlightCard(i);
+    autoProg.textContent = `${i + 1} / ${n} · 第 ${doneCount + 1}/${total} 词`;
+    for (let r = 0; r < repeat && token === autoToken; r++) await playOnce(w.wa);
+    if (w.ea) {
+      for (let r = 0; r < repeat && token === autoToken; r++) await playOnce(w.ea);
+    }
+    doneCount++;
+  }
+  autoToken++;
+  setRunning(false);
+  clearHighlight();
+  autoProg.textContent = '播放完成 ✓';
+}
+
+modeSeg.querySelectorAll('button').forEach(b => {
+  b.addEventListener('click', () => {
+    autoMode = b.dataset.mode;
+    modeSeg.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+    const range = autoMode === 'range';
+    const disp = range ? 'inline-block' : 'none';
+    rangeLbl.style.display = rangeSep.style.display = rangeFrom.style.display = rangeTo.style.display = disp;
+  });
+});
+
+autoStart.addEventListener('click', () => {
+  if (autoRunning) return;
+  stopAuto();
+  if (query) { query = ''; searchInput.value = ''; clearBtn.style.display = 'none'; }
+  render();
+  runAutoPlay();
+});
+
+autoStop.addEventListener('click', stopAuto);
+
+/* ============ init ============ */
+totalWords.textContent = sections.reduce((n, s) => n + s.words.length, 0);
+statCat.textContent = sections.length;
+renderNav();
+render();
+updateAutoHint();
+</script>
+
+<script>
+/* ============ interconnected background ============ */
+(function () {
+  const cv = document.getElementById('net');
+  const ctx = cv.getContext('2d');
+  let W, H, pts = [];
+  function resize() {
+    W = cv.width = window.innerWidth * devicePixelRatio;
+    H = cv.height = window.innerHeight * devicePixelRatio;
+    const n = Math.min(90, Math.floor(W * H / 26000));
+    pts = Array.from({length: n}, () => ({
+      x: Math.random() * W, y: Math.random() * H,
+      vx: (Math.random() - 0.5) * 0.25, vy: (Math.random() - 0.5) * 0.25,
+      r: 1 + Math.random() * 1.6,
+      c: Math.random() < 0.6 ? '56,189,248' : '167,139,250',
+    }));
+  }
+  function step() {
+    ctx.clearRect(0, 0, W, H);
+    const link = 130 * devicePixelRatio;
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i];
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0 || p.x > W) p.vx *= -1;
+      if (p.y < 0 || p.y > H) p.vy *= -1;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${p.c},0.7)`;
+      ctx.fill();
+      for (let j = i + 1; j < pts.length; j++) {
+        const q = pts[j];
+        const d = Math.hypot(p.x - q.x, p.y - q.y);
+        if (d < link) {
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y);
+          ctx.strokeStyle = `rgba(${p.c},${(1 - d / link) * 0.28})`;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(step);
+  }
+  resize(); step();
+  window.addEventListener('resize', resize);
+})();
+</script>
+</body>
+</html>
