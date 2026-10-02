@@ -6,18 +6,18 @@
 <title>N2 词汇 · 互联背词</title>
 <style>
   :root {
-    --bg: #070b14;
-    --bg-2: #0d1424;
-    --panel: rgba(255, 255, 255, 0.035);
-    --panel-solid: #101a30;
-    --border: rgba(255, 255, 255, 0.09);
-    --text: #eef2fb;
-    --dim: #93a0bb;
-    --faint: #5c6a86;
-    --accent: #38bdf8;
-    --accent-2: #a78bfa;
-    --accent-3: #22d3ee;
-    --glow: rgba(56, 189, 248, 0.5);
+    --bg: #f4f7fd;
+    --bg-2: #eef2fb;
+    --panel: rgba(15, 23, 42, 0.04);
+    --panel-solid: #ffffff;
+    --border: rgba(15, 23, 42, 0.10);
+    --text: #1b2437;
+    --dim: #56627a;
+    --faint: #8a97ad;
+    --accent: #2563eb;
+    --accent-2: #7c3aed;
+    --accent-3: #0891b2;
+    --glow: rgba(37, 99, 235, 0.35);
     --radius: 16px;
   }
 
@@ -26,8 +26,9 @@
   body {
     min-height: 100vh;
     background:
-      radial-gradient(1200px 700px at 85% -10%, rgba(167, 139, 250, 0.14), transparent 60%),
-      radial-gradient(1000px 600px at -10% 20%, rgba(56, 189, 248, 0.12), transparent 55%),
+      radial-gradient(1200px 700px at 85% -10%, rgba(124, 58, 237, 0.10), transparent 60%),
+      radial-gradient(1000px 600px at -10% 20%, rgba(37, 99, 235, 0.10), transparent 55%),
+      radial-gradient(900px 500px at 50% 120%, rgba(8, 145, 178, 0.08), transparent 60%),
       var(--bg);
     color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
@@ -51,7 +52,7 @@
   }
   .brand h1 {
     font-size: 30px; font-weight: 800; letter-spacing: 0.5px; line-height: 1.1;
-    background: linear-gradient(120deg, #7dd3fc 0%, #a78bfa 55%, #22d3ee 100%);
+    background: linear-gradient(120deg, #2563eb 0%, #7c3aed 55%, #0891b2 100%);
     -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
   }
   .brand .sub { margin-top: 7px; color: var(--dim); font-size: 13.5px; }
@@ -69,9 +70,9 @@
   .searchbar {
     position: sticky; top: 12px; z-index: 30; margin: 0 0 20px;
     display: flex; align-items: center; gap: 10px;
-    background: rgba(13, 20, 36, 0.85); backdrop-filter: blur(14px);
+    background: rgba(255, 255, 255, 0.82); backdrop-filter: blur(14px);
     border: 1px solid var(--border); border-radius: 14px; padding: 10px 16px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
   }
   .searchbar svg { flex: none; opacity: 0.6; }
   .searchbar input {
@@ -106,10 +107,10 @@
   .cat .n { font-size: 11.5px; color: var(--faint); }
   .cat:hover { color: var(--text); border-color: color-mix(in srgb, var(--c) 55%, transparent); transform: translateY(-1px); }
   .cat.active {
-    color: #fff; background: color-mix(in srgb, var(--c) 20%, transparent);
-    border-color: var(--c); box-shadow: 0 0 24px color-mix(in srgb, var(--c) 35%, transparent);
+    color: #101a30; background: color-mix(in srgb, var(--c) 16%, #ffffff);
+    border-color: var(--c); box-shadow: 0 4px 16px color-mix(in srgb, var(--c) 30%, transparent);
   }
-  .cat.active .n { color: color-mix(in srgb, var(--c) 80%, #fff); }
+  .cat.active .n { color: color-mix(in srgb, var(--c) 55%, #1b2437); }
   .cat-group {
     display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   }
@@ -122,7 +123,7 @@
   /* ---------- autoplay panel ---------- */
   .autoplay {
     display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-    background: rgba(13, 20, 36, 0.85); backdrop-filter: blur(14px);
+    background: rgba(255, 255, 255, 0.82); backdrop-filter: blur(14px);
     border: 1px solid var(--border); border-radius: 14px; padding: 12px 16px;
     margin: 0 0 16px;
   }
@@ -132,7 +133,7 @@
     border: none; background: transparent; color: var(--dim); font-size: 13px;
     padding: 7px 14px; cursor: pointer; transition: all .15s ease;
   }
-  .seg button.on { background: color-mix(in srgb, var(--accent) 22%, transparent); color: #fff; }
+  .seg button.on { background: var(--accent); color: #fff; }
   .autoplay input[type="number"] {
     width: 64px; background: var(--panel); border: 1px solid var(--border);
     border-radius: 8px; color: var(--text); padding: 6px 8px; font-size: 13.5px; text-align: center;
@@ -145,10 +146,10 @@
     color: var(--text); background: var(--panel); white-space: nowrap;
   }
   .btn.primary {
-    background: linear-gradient(120deg, #38bdf8, #a78bfa); border: none; color: #08101f;
+    background: linear-gradient(120deg, #2563eb, #7c3aed); border: none; color: #fff;
   }
   .btn.primary:hover { filter: brightness(1.1); }
-  .btn.stop { color: #fda4af; border-color: rgba(251,113,133,0.4); }
+  .btn.stop { color: #e11d48; border-color: rgba(225, 29, 72, 0.35); }
   .btn:disabled { opacity: 0.4; cursor: not-allowed; }
   .autoplay .prog { font-size: 12.5px; color: var(--accent); font-variant-numeric: tabular-nums; }
   .autoplay .hint { font-size: 11.5px; color: var(--faint); }
@@ -158,7 +159,7 @@
     flex: none; font-size: 11px; color: var(--faint); font-weight: 600;
     letter-spacing: .5px; padding-top: 4px; min-width: 20px; font-variant-numeric: tabular-nums;
   }
-  .card.playing { border-color: var(--c, var(--accent)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--c, var(--accent)) 45%, transparent), 0 14px 34px rgba(0,0,0,0.35); }
+  .card.playing { border-color: var(--c, var(--accent)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--c, var(--accent)) 45%, transparent), 0 12px 28px rgba(15, 23, 42, 0.12); }
 
   /* ---------- word grid ---------- */
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
@@ -171,7 +172,7 @@
     content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
     background: linear-gradient(var(--c, var(--accent)), transparent 75%); opacity: 0.85;
   }
-  .card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--c, var(--accent)) 45%, transparent); box-shadow: 0 14px 34px rgba(0,0,0,0.35); }
+  .card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--c, var(--accent)) 45%, transparent); box-shadow: 0 12px 28px rgba(15, 23, 42, 0.10); }
 
   .card .top { display: flex; align-items: flex-start; gap: 10px; }
   .word {
@@ -184,7 +185,7 @@
   .badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
   .badge {
     font-size: 11px; padding: 2px 8px; border-radius: 6px;
-    background: rgba(255,255,255,0.06); color: var(--dim); border: 1px solid var(--border);
+    background: rgba(15, 23, 42, 0.05); color: var(--dim); border: 1px solid var(--border);
   }
   .badge.acc { color: var(--accent-2); border-color: color-mix(in srgb, var(--accent-2) 30%, transparent); }
   .badge.pos { color: var(--accent-3); }
@@ -192,11 +193,11 @@
 
   .example {
     margin-top: 11px; padding: 10px 12px; border-radius: 11px; cursor: pointer;
-    background: rgba(255,255,255,0.028); border: 1px dashed var(--border);
+    background: rgba(15, 23, 42, 0.03); border: 1px dashed var(--border);
     transition: background .15s ease, border-color .15s ease;
   }
-  .example:hover { background: rgba(255,255,255,0.05); border-color: color-mix(in srgb, var(--c, var(--accent)) 40%, transparent); }
-  .example .jp { font-size: 14px; line-height: 1.6; color: #d7e0f0; }
+  .example:hover { background: rgba(15, 23, 42, 0.06); border-color: color-mix(in srgb, var(--c, var(--accent)) 40%, transparent); }
+  .example .jp { font-size: 14px; line-height: 1.6; color: #2b3550; }
   .example .cn { margin-top: 6px; font-size: 12.5px; color: var(--faint); line-height: 1.5; }
 
   /* speaker button */
@@ -559,7 +560,7 @@ updateAutoHint();
       x: Math.random() * W, y: Math.random() * H,
       vx: (Math.random() - 0.5) * 0.25, vy: (Math.random() - 0.5) * 0.25,
       r: 1 + Math.random() * 1.6,
-      c: Math.random() < 0.6 ? '56,189,248' : '167,139,250',
+      c: Math.random() < 0.6 ? '37,99,235' : '124,58,237',
     }));
   }
   function step() {
@@ -572,7 +573,7 @@ updateAutoHint();
       if (p.y < 0 || p.y > H) p.vy *= -1;
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(${p.c},0.7)`;
+      ctx.fillStyle = `rgba(${p.c},0.5)`;
       ctx.fill();
       for (let j = i + 1; j < pts.length; j++) {
         const q = pts[j];
@@ -580,7 +581,7 @@ updateAutoHint();
         if (d < link) {
           ctx.beginPath();
           ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y);
-          ctx.strokeStyle = `rgba(${p.c},${(1 - d / link) * 0.28})`;
+          ctx.strokeStyle = `rgba(${p.c},${(1 - d / link) * 0.16})`;
           ctx.lineWidth = 1;
           ctx.stroke();
         }
