@@ -5,6 +5,14 @@ import json, re, hashlib
 
 raw = json.load(open('words_raw.json', encoding='utf-8'))
 
+# Manual overrides exported from the browser editor, keyed by audio stem
+# (e.g. {"verb_w6": {"r": "くむ", "ec": "打水。"}}). Only listed fields are replaced.
+OVERRIDES = {}
+try:
+    OVERRIDES = json.load(open('manual_overrides.json', encoding='utf-8'))
+except (OSError, ValueError):
+    pass
+
 HIRA = 'ぁあぃいぅうぇえぉおかがきぎくぐけげこごさざしじすずせぜそぞただちぢつづてでとどなにぬねのはばぱひびぴふぶぷへべぺほぼぽまみむめもやゆよらりるれろわをんっゃゅょー'
 KATA = 'ァアィイゥウェエォオカガキギクグケゲコゴサザシジスズセゼソゾタダチヂツヅテデトドナニヌネノハバパヒビピフブプヘベペホボポマミムメモヤユヨラリルレロワヲンッャュョー'
 
@@ -110,9 +118,31 @@ for sec_id, parent, title, words, has_ex in sections:
             example = '一' + example[1:]
         example_cn = strip_noise(w.get('example_cn', '')) if has_ex else ''
 
+        # apply manual overrides on top of the auto-derived fields, so the
+        # corrected reading/example flow into both data.js and the audio text
+        wstem = f'{sec_id}_w{i}'
+        ov = OVERRIDES.get(wstem)
+        if ov:
+            for field in ('w', 'r', 'a', 'p', 'm', 'e', 'ec'):
+                if field in ov and ov[field] is not None:
+                    val = str(ov[field])
+                    if field == 'w':
+                        word = val
+                    elif field == 'r':
+                        reading = val
+                    elif field == 'a':
+                        accent = val
+                    elif field == 'p':
+                        pos = val
+                    elif field == 'm':
+                        meaning = val
+                    elif field == 'e':
+                        example = val
+                    elif field == 'ec':
+                        example_cn = val
+
         # word audio
         wtxt = tts_text(word, reading)
-        wstem = f'{sec_id}_w{i}'
         manifest.append((wstem, wtxt))
 
         # example audio
@@ -122,6 +152,7 @@ for sec_id, parent, title, words, has_ex in sections:
             manifest.append((exstem, example))
 
         sec_words.append({
+            'k': wstem,
             'w': word,
             'r': reading,
             'a': accent,

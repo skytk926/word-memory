@@ -218,6 +218,51 @@
 
   .empty { text-align: center; color: var(--faint); padding: 60px 20px; font-size: 15px; }
 
+  /* ---------- edit button ---------- */
+  .edit-btn {
+    position: absolute; top: 10px; right: 10px; width: 26px; height: 26px;
+    border-radius: 8px; border: 1px solid var(--border); background: var(--panel-solid);
+    color: var(--dim); cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+    font-size: 13px; line-height: 1; opacity: 0.5;
+    transition: opacity .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .card:hover .edit-btn { opacity: 1; }
+  .edit-btn:hover { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+  .edit-btn.active { opacity: 1; color: #16a34a; border-color: color-mix(in srgb, #16a34a 40%, transparent); }
+  .badge.edited { color: #16a34a; border-color: color-mix(in srgb, #16a34a 35%, transparent); background: color-mix(in srgb, #16a34a 10%, transparent); }
+
+  /* ---------- edit toolbar ---------- */
+  .editbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 14px; }
+  .editbar .hint { font-size: 12px; color: var(--faint); flex: 1; min-width: 220px; line-height: 1.5; }
+  .editbar code { font-size: 11.5px; background: rgba(15,23,42,0.06); padding: 1px 5px; border-radius: 5px; }
+
+  /* ---------- edit modal ---------- */
+  .modal-mask {
+    position: fixed; inset: 0; z-index: 100; display: none;
+    align-items: center; justify-content: center; padding: 20px;
+    background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(3px);
+  }
+  .modal {
+    background: var(--panel-solid); border: 1px solid var(--border); border-radius: 16px;
+    width: 100%; max-width: 520px; max-height: 88vh; overflow: auto;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25); padding: 18px 20px 20px;
+  }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .modal-title { font-size: 15px; font-weight: 700; }
+  .modal-close { border: none; background: var(--panel); color: var(--dim); width: 28px; height: 28px; border-radius: 8px; cursor: pointer; font-size: 14px; }
+  .modal-close:hover { color: var(--text); }
+  .modal-body { display: flex; flex-direction: column; gap: 11px; }
+  .modal-body label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: var(--dim); }
+  .modal-body label .hint { font-weight: 400; color: var(--faint); }
+  .modal-body input, .modal-body textarea {
+    background: var(--bg-2); border: 1px solid var(--border); border-radius: 9px;
+    color: var(--text); font-size: 14px; padding: 9px 11px; outline: none;
+    font-family: inherit; resize: vertical; min-height: 38px;
+  }
+  .modal-body textarea { min-height: 58px; }
+  .modal-body input:focus, .modal-body textarea:focus { border-color: var(--accent); background: #fff; }
+  .modal-foot { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+
   footer { margin-top: 50px; text-align: center; color: var(--faint); font-size: 12px; line-height: 1.7; }
   footer a { color: var(--accent); text-decoration: none; }
 
@@ -250,6 +295,12 @@
     <button class="clear" id="clearBtn" title="清空">✕</button>
   </div>
 
+  <div class="editbar">
+    <span class="hint">发现缺读音 / 释义或例句翻译有误？点卡片右上角 ✎ 修改，改完点「导出修改」，把 <code>manual_overrides.json</code> 放进项目目录，再运行 <code>python3 finalize.py &amp;&amp; python3 gen_audio.py</code> 重新生成数据与音频。</span>
+    <button class="btn" id="exportBtn">导出修改</button>
+    <button class="btn" id="ovClear" style="display:none">清除本地修改</button>
+  </div>
+
   <div class="autoplay">
     <span class="lbl">自动播放</span>
     <div class="seg" id="modeSeg">
@@ -280,6 +331,28 @@
   </footer>
 </div>
 
+<div class="modal-mask" id="editMask">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title" id="editTitle">编辑</span>
+      <button class="modal-close" id="editClose">✕</button>
+    </div>
+    <div class="modal-body">
+      <label>单词<input id="fW" type="text"></label>
+      <label>读音 / 假名<span class="hint">单词发音以此为准</span><input id="fR" type="text"></label>
+      <label>声调<input id="fA" type="text"></label>
+      <label>词性<input id="fP" type="text"></label>
+      <label>释义<textarea id="fM" rows="2"></textarea></label>
+      <label>例句（日文）<span class="hint">例句发音以此为准</span><textarea id="fE" rows="2"></textarea></label>
+      <label>例句释义（中文）<textarea id="fEc" rows="2"></textarea></label>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" id="editCancel">取消</button>
+      <button class="btn primary" id="editSave">保存</button>
+    </div>
+  </div>
+</div>
+
 <script src="data.js"></script>
 <script>
 /* ============ data ============ */
@@ -302,6 +375,14 @@ const sections = SECTIONS.map((s, i) => ({
 /* ============ state ============ */
 let activeId = sections[0].id;
 let query = '';
+
+/* ============ manual overrides (browser editing) ============ */
+let overrides = {};
+try { overrides = JSON.parse(localStorage.getItem('wm_overrides') || '{}'); } catch (e) { overrides = {}; }
+function saveOverrides() { localStorage.setItem('wm_overrides', JSON.stringify(overrides)); }
+function overrideCount() { return Object.keys(overrides).length; }
+function wk(w) { return w.k || (w.wa || '').replace(/^audio\//, '').replace(/\.m4a$/, ''); }
+function effectiveWord(w) { const o = overrides[wk(w)]; return o ? { ...w, ...o } : w; }
 
 /* ============ audio ============ */
 let current = null;
@@ -330,36 +411,42 @@ function esc(s) {
 }
 
 function wordCard(w, sec, idx) {
+  const ww = effectiveWord(w);
+  const k = wk(w);
+  const edited = !!overrides[k];
   const badges = [];
-  if (w.a) badges.push(`<span class="badge acc">声调 ${esc(w.a)}</span>`);
-  if (w.p) badges.push(`<span class="badge pos">${esc(w.p)}</span>`);
+  if (ww.a) badges.push(`<span class="badge acc">声调 ${esc(ww.a)}</span>`);
+  if (ww.p) badges.push(`<span class="badge pos">${esc(ww.p)}</span>`);
+  if (edited) badges.push(`<span class="badge edited">已改</span>`);
 
-  const exHtml = w.e
-    ? `<div class="example" onclick="playAudio('${esc(w.ea)}', this.querySelector('.spk'))">
+  const exHtml = ww.e
+    ? `<div class="example" onclick="playAudio('${esc(ww.ea)}', this.querySelector('.spk'))">
          <div class="ex-label"><span class="tag">例句</span><span class="spk"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3z"/><path d="M16 8a5 5 0 010 8M18.5 5.5a9 9 0 010 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span></div>
-         <div class="jp">${esc(w.e)}</div>
-         ${w.ec ? `<div class="cn">${esc(w.ec)}</div>` : ''}
+         <div class="jp">${esc(ww.e)}</div>
+         ${ww.ec ? `<div class="cn">${esc(ww.ec)}</div>` : ''}
        </div>`
     : '';
 
   return `<div class="card" data-idx="${idx}" style="--c:${sec.color}">
+    <button class="edit-btn ${edited ? 'active' : ''}" data-k="${esc(k)}" title="编辑">✎</button>
     <div class="top">
       <span class="num">${idx + 1}</span>
-      <div class="word" onclick="playAudio('${esc(w.wa)}', this.querySelector('.spk'))">
-        <span class="jp">${esc(w.w)}</span>
+      <div class="word" onclick="playAudio('${esc(ww.wa)}', this.querySelector('.spk'))">
+        <span class="jp">${esc(ww.w)}</span>
         <span class="spk"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3z"/><path d="M16 8a5 5 0 010 8M18.5 5.5a9 9 0 010 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
       </div>
     </div>
-    ${w.r ? `<div class="reading">${esc(w.r)}</div>` : ''}
+    ${ww.r ? `<div class="reading">${esc(ww.r)}</div>` : ''}
     ${badges.length ? `<div class="badges">${badges.join('')}</div>` : ''}
-    ${w.m ? `<div class="meaning">${esc(w.m)}</div>` : ''}
+    ${ww.m ? `<div class="meaning">${esc(ww.m)}</div>` : ''}
     ${exHtml}
   </div>`;
 }
 
 function matches(w, q) {
   if (!q) return true;
-  const hay = (w.w + ' ' + w.r + ' ' + w.m + ' ' + w.e + ' ' + w.ec).toLowerCase();
+  const ww = effectiveWord(w);
+  const hay = (ww.w + ' ' + ww.r + ' ' + ww.m + ' ' + ww.e + ' ' + ww.ec).toLowerCase();
   return hay.includes(q.toLowerCase());
 }
 
@@ -367,6 +454,9 @@ function render() {
   const sec = sections.find(s => s.id === activeId);
   const words = sec.words.filter(w => matches(w, query));
   grid.innerHTML = words.map((w, i) => wordCard(w, sec, i)).join('');
+  grid.querySelectorAll('.edit-btn').forEach(btn => {
+    btn.addEventListener('click', () => openEdit(btn.dataset.k));
+  });
   empty.style.display = words.length ? 'none' : 'block';
   statCur.textContent = words.length;
   document.getElementById('search').placeholder = `在「${sec.label}」中搜索（${sec.words.length} 词）…`;
@@ -538,12 +628,91 @@ autoStart.addEventListener('click', () => {
 
 autoStop.addEventListener('click', stopAuto);
 
+/* ============ manual editing ============ */
+const editMask = document.getElementById('editMask');
+const editTitle = document.getElementById('editTitle');
+const exportBtn = document.getElementById('exportBtn');
+const ovClear = document.getElementById('ovClear');
+let editKey = null;
+
+const FIELDS = [
+  ['fW', 'w'], ['fR', 'r'], ['fA', 'a'], ['fP', 'p'],
+  ['fM', 'm'], ['fE', 'e'], ['fEc', 'ec'],
+];
+
+function findWord(k) {
+  for (const s of sections) {
+    const w = s.words.find(x => wk(x) === k);
+    if (w) return w;
+  }
+  return null;
+}
+
+function openEdit(k) {
+  const w = findWord(k);
+  if (!w) return;
+  editKey = k;
+  const ww = effectiveWord(w);
+  editTitle.textContent = `编辑 · ${ww.w}`;
+  FIELDS.forEach(([id, f]) => { document.getElementById(id).value = ww[f] || ''; });
+  editMask.style.display = 'flex';
+  document.getElementById('fW').focus();
+}
+
+function closeEdit() { editMask.style.display = 'none'; editKey = null; }
+
+document.getElementById('editSave').addEventListener('click', () => {
+  const w = editKey && findWord(editKey);
+  if (!w) return;
+  const diff = {};
+  FIELDS.forEach(([id, f]) => {
+    const v = document.getElementById(id).value.trim();
+    if (v !== (w[f] || '')) diff[f] = v;
+  });
+  if (Object.keys(diff).length) overrides[editKey] = diff;
+  else delete overrides[editKey];
+  saveOverrides();
+  closeEdit();
+  render();
+  updateExportBtn();
+});
+
+document.getElementById('editCancel').addEventListener('click', closeEdit);
+document.getElementById('editClose').addEventListener('click', closeEdit);
+editMask.addEventListener('click', e => { if (e.target === editMask) closeEdit(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && editMask.style.display !== 'none') closeEdit(); });
+
+function updateExportBtn() {
+  const n = overrideCount();
+  exportBtn.textContent = n ? `导出修改（${n} 处）` : '导出修改';
+  ovClear.style.display = n ? 'inline-flex' : 'none';
+}
+
+exportBtn.addEventListener('click', () => {
+  if (!overrideCount()) { alert('还没有任何修改'); return; }
+  const blob = new Blob([JSON.stringify(overrides, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'manual_overrides.json';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 500);
+});
+
+ovClear.addEventListener('click', () => {
+  if (!confirm('清除所有本地修改？（已导出的文件不受影响）')) return;
+  overrides = {};
+  saveOverrides();
+  render();
+  updateExportBtn();
+});
+
 /* ============ init ============ */
 totalWords.textContent = sections.reduce((n, s) => n + s.words.length, 0);
 statCat.textContent = sections.length;
 renderNav();
 render();
 updateAutoHint();
+updateExportBtn();
 </script>
 
 <script>
